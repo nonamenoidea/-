@@ -1,0 +1,2526 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>排课系统 | 需求分析与设计文档</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5a67d8;
+            --secondary: #2d3748;
+            --accent: #f093fb;
+            --accent-secondary: #f5365c;
+            --light: #f7fafc;
+            --dark: #1a202c;
+            --success: #48bb78;
+            --warning: #ed8936;
+            --info: #4299e1;
+            --text-light: #718096;
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5365c 100%);
+            --gradient-success: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15), 0 3px 6px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.1);
+            --border-radius: 12px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.6;
+            color: var(--secondary);
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            scroll-behavior: smooth;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        /* 粒子背景动画 */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(102, 126, 234, 0.3);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        /* 头部样式 */
+        header {
+            background: var(--gradient-primary);
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 1rem 0;
+            box-shadow: var(--shadow-lg);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            transition: var(--transition);
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
+        }
+
+        .logo i {
+            font-size: 2.5rem;
+            margin-right: 15px;
+            background: var(--gradient-success);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .logo h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 1rem;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.8rem 1.2rem;
+            border-radius: 25px;
+            transition: var(--transition);
+            position: relative;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        nav ul li a:hover, 
+        nav ul li a.active {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* 英雄区域 */
+        .hero {
+            background: linear-gradient(rgba(44, 62, 80, 0.8), rgba(102, 126, 234, 0.8)), url('./images/hero-bg.jpg') no-repeat center center/cover;
+            color: white;
+            padding: 8rem 0;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)" /></svg>');
+            opacity: 0.3;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-content h2 {
+            font-size: 3.5rem;
+            margin-bottom: 2rem;
+            animation: fadeInDown 1s ease;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            background: linear-gradient(45deg, #fff, #f0f8ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-content p {
+            font-size: 1.3rem;
+            max-width: 800px;
+            margin: 0 auto 3rem;
+            animation: fadeInUp 1s ease;
+            opacity: 0.9;
+            line-height: 1.8;
+        }
+
+        .btn {
+            display: inline-block;
+            background: var(--gradient-secondary);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: var(--transition);
+            border: none;
+            cursor: pointer;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: var(--transition);
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: var(--shadow-xl);
+        }
+
+        /* 文档导航 */
+        .docs-nav {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            padding: 4rem 0;
+            position: relative;
+        }
+
+        .nav-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+        }
+
+        .nav-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            transition: var(--transition);
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+        }
+
+        .nav-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-primary);
+        }
+
+        .nav-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .card-icon {
+            background: var(--gradient-primary);
+            color: white;
+            padding: 2rem;
+            font-size: 3rem;
+            position: relative;
+        }
+
+        .card-icon::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 10px solid var(--primary);
+        }
+
+        .card-content {
+            padding: 2rem;
+        }
+
+        .card-content h3 {
+            font-size: 1.6rem;
+            margin-bottom: 1rem;
+            color: var(--primary-dark);
+            font-weight: 700;
+        }
+
+        .card-content p {
+            color: var(--text-light);
+            margin-bottom: 1.5rem;
+        }
+
+        .card-content ul {
+            text-align: left;
+            list-style-type: none;
+            margin-top: 1rem;
+        }
+
+        .card-content ul li {
+            padding: 0.8rem 0;
+            border-bottom: 1px dashed rgba(102, 126, 234, 0.2);
+            display: flex;
+            align-items: center;
+            transition: var(--transition);
+        }
+
+        .card-content ul li:hover {
+            color: var(--primary);
+            transform: translateX(5px);
+        }
+
+        .card-content ul li:before {
+            content: "✓";
+            color: var(--success);
+            font-weight: bold;
+            margin-right: 0.8rem;
+            width: 20px;
+            height: 20px;
+            background: rgba(72, 187, 120, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+
+        /* 文档内容区 */
+        .doc-section {
+            padding: 6rem 0;
+            position: relative;
+        }
+
+        .doc-section:nth-child(even) {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 4rem;
+            position: relative;
+        }
+
+        .section-title h2 {
+            font-size: 3rem;
+            color: var(--secondary);
+            display: inline-block;
+            padding-bottom: 1rem;
+            position: relative;
+            font-weight: 700;
+        }
+
+        .section-title h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: var(--gradient-primary);
+            border-radius: 2px;
+        }
+
+        .doc-content {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: var(--border-radius);
+            padding: 3rem;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+        }
+
+        .doc-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-primary);
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+        }
+
+        .doc-content h3 {
+            color: var(--primary);
+            margin: 2.5rem 0 1.5rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 2px solid rgba(102, 126, 234, 0.2);
+            font-size: 1.8rem;
+            font-weight: 600;
+            position: relative;
+        }
+
+        .doc-content h3::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -2px;
+            width: 50px;
+            height: 2px;
+            background: var(--primary);
+        }
+
+        .doc-content h4 {
+            color: var(--primary-dark);
+            margin: 2rem 0 1rem;
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        .doc-content p {
+            margin-bottom: 1.5rem;
+            line-height: 1.8;
+            color: var(--text-light);
+        }
+
+        .doc-content ul, .doc-content ol {
+            margin: 1.5rem 0;
+            padding-left: 2rem;
+        }
+
+        .doc-content li {
+            margin-bottom: 0.8rem;
+            line-height: 1.6;
+            color: var(--text-light);
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--gradient-primary);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-xl);
+            border-color: var(--primary);
+        }
+
+        .feature-card h4 {
+            color: var(--primary-dark);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .feature-card h4 i {
+            margin-right: 1rem;
+            color: var(--success);
+            font-size: 1.5rem;
+            width: 40px;
+            height: 40px;
+            background: rgba(72, 187, 120, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 图表展示 */
+        .diagram-container {
+            margin: 3rem 0;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            text-align: center;
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            position: relative;
+        }
+
+        .diagram-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-primary);
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+        }
+
+        .diagram {
+            max-width: 100%;
+            height: auto;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            transition: var(--transition);
+        }
+
+        .diagram:hover {
+            transform: scale(1.02);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .diagram-placeholder {
+            width: 100%;
+            height: 400px;
+            background: var(--gradient-success);
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 600;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .diagram-placeholder::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="dots" width="5" height="5" patternUnits="userSpaceOnUse"><circle cx="2.5" cy="2.5" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23dots)" /></svg>');
+        }
+
+        /* 视频演示画廊 */
+        .video-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 3rem;
+            margin: 3rem 0;
+        }
+
+        .video-item {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            transition: var(--transition);
+        }
+
+        .video-item:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .video-item h4 {
+            padding: 1.5rem;
+            margin: 0;
+            background: var(--gradient-primary);
+            color: white;
+            text-align: center;
+            font-weight: 600;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .video-item h4::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: var(--transition);
+        }
+
+        .video-item:hover h4::before {
+            left: 100%;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 56.25%; /* 16:9 宽高比 */
+            background: #000;
+            overflow: hidden;
+        }
+
+        .demo-video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: var(--transition);
+        }
+
+        .demo-video:hover {
+            transform: scale(1.02);
+        }
+
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .video-fallback {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--gradient-success);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .video-fallback i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.8;
+        }
+
+        .video-fallback p {
+            margin-top: 0.5rem;
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .video-description {
+            padding: 1.5rem;
+            background: rgba(247, 250, 252, 0.9);
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+
+        .video-description p {
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        /* 视频源切换控制 */
+        .video-source-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+
+        .source-btn {
+            padding: 0.8rem 1.5rem;
+            border: 2px solid var(--primary);
+            background: transparent;
+            color: var(--primary);
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .source-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--primary);
+            transition: var(--transition);
+            z-index: -1;
+        }
+
+        .source-btn:hover::before,
+        .source-btn.active::before {
+            left: 0;
+        }
+
+        .source-btn:hover,
+        .source-btn.active {
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .source-btn:not(.active):hover {
+            background: var(--primary);
+        }
+
+        /* 视频播放控制样式 */
+        .video-controls {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 8px;
+            padding: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .video-container:hover .video-controls {
+            opacity: 1;
+        }
+
+        .play-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .play-btn:hover {
+            transform: scale(1.1);
+            background: var(--primary-dark);
+        }
+
+        .video-progress {
+            flex: 1;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .video-progress-bar {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+
+        /* 响应式视频 */
+        @media (max-width: 768px) {
+            .video-gallery {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .video-item {
+                min-width: unset;
+            }
+
+            .video-source-toggle {
+                gap: 0.5rem;
+            }
+
+            .source-btn {
+                padding: 0.6rem 1rem;
+                font-size: 0.9rem;
+            }
+        }
+
+        /* 系统演示画廊 */
+        .demo-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .demo-item {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            transition: var(--transition);
+        }
+
+        .demo-item:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .demo-item h4 {
+            padding: 1.5rem;
+            margin: 0;
+            background: var(--gradient-primary);
+            color: white;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .demo-image {
+            padding: 1rem;
+            background: #f8f9fa;
+        }
+
+        .screenshot {
+            width: 100%;
+            height: auto;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+        }
+
+        .screenshot:hover {
+            transform: scale(1.02);
+            box-shadow: var(--shadow-md);
+        }
+
+        .screenshot-placeholder {
+            width: 100%;
+            height: 200px;
+            background: var(--gradient-success);
+            border-radius: var(--border-radius);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .screenshot-placeholder i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        /* 团队成员头像 */
+        .member-photo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+        }
+
+        .member-icon {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            color: white;
+        }
+
+        /* 团队展示 */
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2.5rem;
+            margin-top: 3rem;
+        }
+
+        .team-member {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            text-align: center;
+            transition: var(--transition);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+        }
+
+        .team-member::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-secondary);
+        }
+
+        .team-member:hover {
+            transform: translateY(-15px) scale(1.02);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .member-img {
+            height: 200px;
+            background: var(--gradient-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 4rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .member-img::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="hexagon" width="20" height="20" patternUnits="userSpaceOnUse"><polygon points="10,1 17.32,5.5 17.32,14.5 10,19 2.68,14.5 2.68,5.5" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23hexagon)" /></svg>');
+            opacity: 0.3;
+        }
+
+        .member-info {
+            padding: 2rem;
+        }
+
+        .member-info h4 {
+            font-size: 1.5rem;
+            color: var(--primary-dark);
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .member-info p {
+            color: var(--accent-secondary);
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .member-contribution {
+            margin-top: 1.5rem;
+            background: rgba(102, 126, 234, 0.05);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            border-left: 4px solid var(--primary);
+        }
+
+        .member-contribution strong {
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        /* 页脚 */
+        footer {
+            background: var(--gradient-primary);
+            color: white;
+            padding: 4rem 0 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="waves" width="100" height="20" patternUnits="userSpaceOnUse"><path d="M0 10 Q25 0 50 10 T100 10 V20 H0 Z" fill="rgba(255,255,255,0.05)"/></pattern></defs><rect width="100" height="100" fill="url(%23waves)" /></svg>');
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 3rem;
+            margin-bottom: 3rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .footer-column h3 {
+            font-size: 1.6rem;
+            margin-bottom: 2rem;
+            position: relative;
+            padding-bottom: 0.8rem;
+            font-weight: 700;
+        }
+
+        .footer-column h3::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: var(--gradient-success);
+            border-radius: 2px;
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 1rem;
+        }
+
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 0;
+        }
+
+        .footer-links a:hover {
+            color: white;
+            transform: translateX(8px);
+        }
+
+        .footer-links a i {
+            margin-right: 0.8rem;
+            width: 20px;
+        }
+
+        .copyright {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            z-index: 2;
+            opacity: 0.8;
+        }
+
+        /* 暗色模式切换按钮 */
+        #dark-mode-toggle {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 999;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: var(--shadow-xl);
+            background: var(--gradient-secondary);
+            transition: var(--transition);
+        }
+
+        #dark-mode-toggle:hover {
+            transform: scale(1.1) rotate(180deg);
+        }
+
+        /* 暗色模式 */
+        body.dark-theme {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e6e6e6;
+        }
+
+        body.dark-theme .nav-card,
+        body.dark-theme .doc-content,
+        body.dark-theme .feature-card,
+        body.dark-theme .team-member,
+        body.dark-theme .diagram-container {
+            background: rgba(26, 26, 46, 0.9);
+            color: #e6e6e6;
+            border-color: rgba(102, 126, 234, 0.3);
+        }
+
+        body.dark-theme .docs-nav {
+            background: rgba(26, 26, 46, 0.9);
+        }
+
+        body.dark-theme .doc-section:nth-child(even) {
+            background: rgba(22, 33, 62, 0.5);
+        }
+
+        /* 滚动进度指示器 */
+        .scroll-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 4px;
+            background: var(--gradient-primary);
+            z-index: 9999;
+            transition: width 0.3s ease;
+        }
+
+        /* 首页概览 */
+        .home-overview {
+            padding: 6rem 0;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            position: relative;
+        }
+
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .stats-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            text-align: center;
+            box-shadow: var(--shadow-md);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition);
+        }
+
+        .stats-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-primary);
+        }
+
+        .stats-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .stat-item {
+            position: relative;
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .stat-unit {
+            font-size: 1.2rem;
+            color: var(--primary);
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-light);
+            font-weight: 500;
+            font-size: 1.1rem;
+        }
+
+        /* 技术栈 */
+        .tech-stack {
+            text-align: center;
+            margin-top: 4rem;
+        }
+
+        .tech-stack h3 {
+            font-size: 2.5rem;
+            color: var(--secondary);
+            margin-bottom: 3rem;
+            position: relative;
+            display: inline-block;
+            font-weight: 700;
+        }
+
+        .tech-stack h3::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: var(--gradient-primary);
+            border-radius: 2px;
+        }
+
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .tech-item {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: var(--border-radius);
+            padding: 2rem 1.5rem;
+            text-align: center;
+            transition: var(--transition);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tech-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-secondary);
+        }
+
+        .tech-item:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .tech-item i {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .tech-item span {
+            display: block;
+            font-weight: 600;
+            color: var(--secondary);
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .tech-progress {
+            width: 100%;
+            height: 6px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--gradient-primary);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 2s ease;
+            position: relative;
+        }
+
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* 浮动操作按钮 */
+        .floating-actions {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .floating-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-lg);
+            transition: var(--transition);
+            font-size: 1.2rem;
+        }
+
+        .floating-btn:hover {
+            transform: scale(1.1);
+            box-shadow: var(--shadow-xl);
+        }
+
+        /* 项目亮点时间轴 */
+        .project-highlights {
+            padding: 6rem 0;
+            background: rgba(247, 250, 252, 0.9);
+            position: relative;
+        }
+
+        .timeline {
+            position: relative;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 100%;
+            background: var(--gradient-primary);
+            border-radius: 2px;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin: 3rem 0;
+            width: 50%;
+        }
+
+        .timeline-item:nth-child(odd) {
+            left: 0;
+            padding-right: 2rem;
+        }
+
+        .timeline-item:nth-child(even) {
+            left: 50%;
+            padding-left: 2rem;
+        }
+
+        .timeline-content {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            position: relative;
+            transition: var(--transition);
+        }
+
+        .timeline-content::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 0;
+            height: 0;
+            border: 15px solid transparent;
+        }
+
+        .timeline-item:nth-child(odd) .timeline-content::before {
+            right: -30px;
+            border-left-color: rgba(255, 255, 255, 0.95);
+        }
+
+        .timeline-item:nth-child(even) .timeline-content::before {
+            left: -30px;
+            border-right-color: rgba(255, 255, 255, 0.95);
+        }
+
+        .timeline-content:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .timeline-content h4 {
+            color: var(--primary);
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            background: var(--primary);
+            border-radius: 50%;
+            border: 4px solid white;
+            box-shadow: var(--shadow-md);
+            z-index: 2;
+        }
+
+        /* 微光效果 */
+        .glow-effect {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glow-effect::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 70%);
+            transform: scale(0);
+            transition: transform 0.6s ease;
+            pointer-events: none;
+        }
+
+        .glow-effect:hover::before {
+            transform: scale(1);
+        }
+
+        /* 响应式设计改进 */
+        @media (max-width: 768px) {
+            .timeline-item {
+                width: 100%;
+                left: 0 !important;
+                padding: 0 0 0 2rem !important;
+            }
+            
+            .timeline::before {
+                left: 10px;
+            }
+            
+            .timeline-dot {
+                left: 10px;
+            }
+            
+            .timeline-content::before {
+                left: -30px !important;
+                border-right-color: rgba(255, 255, 255, 0.95) !important;
+                border-left-color: transparent !important;
+            }
+            
+            .floating-actions {
+                left: 20px;
+            }
+            
+            .overview-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 1rem;
+            }
+            
+            .tech-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 1rem;
+            }
+
+            .demo-gallery {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .demo-item {
+                min-width: unset;
+            }
+        }
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+                gap: 1rem;
+            }
+            
+            .nav-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .hero-content h2 {
+                font-size: 2.5rem;
+            }
+            
+            .hero-content p {
+                font-size: 1.1rem;
+            }
+            
+            .section-title h2 {
+                font-size: 2.2rem;
+            }
+            
+            .doc-content {
+                padding: 2rem;
+            }
+            
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .team-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 动画 */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* 滚动动画 */
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s ease;
+        }
+
+        .animate-on-scroll.animate {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 滚动进度指示器 -->
+    <div class="scroll-progress" id="scroll-progress"></div>
+
+    <!-- 粒子背景 -->
+    <div class="particles" id="particles"></div>
+
+    <!-- 头部导航 -->
+    <header>
+        <div class="container header-content">
+            <div class="logo">
+                <i class="fas fa-graduation-cap"></i>
+                <h1>智能排课系统</h1>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#home" class="active">首页</a></li>
+                    <li><a href="#requirements">需求分析</a></li>
+                    <li><a href="#design">系统设计</a></li>
+                    <li><a href="#diagrams">设计图表</a></li>
+                    <li><a href="#team">项目团队</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- 首页概览 -->
+    <section id="home" class="home-overview">
+        <div class="container">
+            <div class="overview-grid">
+                <div class="stats-card animate-on-scroll">
+                    <div class="stat-item">
+                        <div class="stat-number" data-target="99">0</div>
+                        <div class="stat-label">排课效率提升</div>
+                        <div class="stat-unit">%</div>
+                    </div>
+                </div>
+                <div class="stats-card animate-on-scroll">
+                    <div class="stat-item">
+                        <div class="stat-number" data-target="85">0</div>
+                        <div class="stat-label">资源利用率</div>
+                        <div class="stat-unit">%</div>
+                    </div>
+                </div>
+                <div class="stats-card animate-on-scroll">
+                    <div class="stat-item">
+                        <div class="stat-number" data-target="3">0</div>
+                        <div class="stat-label">核心功能模块</div>
+                        <div class="stat-unit">个</div>
+                    </div>
+                </div>
+                <div class="stats-card animate-on-scroll">
+                    <div class="stat-item">
+                        <div class="stat-number" data-target="24">0</div>
+                        <div class="stat-label">系统响应时间</div>
+                        <div class="stat-unit">ms</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tech-stack">
+                <h3>技术栈</h3>
+                <div class="tech-grid">
+                    <div class="tech-item animate-on-scroll">
+                        <i class="fab fa-vuejs"></i>
+                        <span>Vue.js</span>
+                        <div class="tech-progress">
+                            <div class="progress-bar" data-width="90%"></div>
+                        </div>
+                    </div>
+                    <div class="tech-item animate-on-scroll">
+                        <i class="fab fa-python"></i>
+                        <span>Python</span>
+                        <div class="tech-progress">
+                            <div class="progress-bar" data-width="85%"></div>
+                        </div>
+                    </div>
+                    <div class="tech-item animate-on-scroll">
+                        <i class="fas fa-database"></i>
+                        <span>MySQL</span>
+                        <div class="tech-progress">
+                            <div class="progress-bar" data-width="80%"></div>
+                        </div>
+                    </div>
+                    <div class="tech-item animate-on-scroll">
+                        <i class="fab fa-html5"></i>
+                        <span>HTML5</span>
+                        <div class="tech-progress">
+                            <div class="progress-bar" data-width="95%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 英雄区域 -->
+    <section class="hero">
+        <div class="container hero-content">
+            <h2>智能排课系统需求分析与设计文档</h2>
+            <p>本系统旨在解决传统人工排课的痛点，通过智能算法实现高效、无冲突的课程安排，优化教学资源配置，提升教务管理效率。</p>
+            <a href="#requirements" class="btn">查看文档 <i class="fas fa-arrow-down"></i></a>
+        </div>
+    </section>
+
+    <!-- 文档导航 -->
+    <section class="docs-nav">
+        <div class="container">
+            <div class="nav-cards">
+                <div class="nav-card animate-on-scroll">
+                    <div class="card-icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>需求分析</h3>
+                        <p>系统功能需求与用户分析</p>
+                        <ul>
+                            <li>用户管理模块</li>
+                            <li>基础数据管理</li>
+                            <li>排课规则设置</li>
+                            <li>系统维护需求</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="nav-card animate-on-scroll">
+                    <div class="card-icon">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>系统设计</h3>
+                        <p>架构与技术实现方案</p>
+                        <ul>
+                            <li>系统架构设计</li>
+                            <li>数据库设计</li>
+                            <li>排课算法设计</li>
+                            <li>接口设计</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="nav-card animate-on-scroll">
+                    <div class="card-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>设计图表</h3>
+                        <p>UML与系统流程图</p>
+                        <ul>
+                            <li>结构图</li>
+                            <li>类图</li>
+                            <li>时序图</li>
+                            <li>流程图</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 项目亮点时间轴 -->
+    <section class="project-highlights">
+        <div class="container">
+            <div class="section-title">
+                <h2>项目亮点</h2>
+            </div>
+            <div class="timeline">
+                <div class="timeline-item animate-on-scroll">
+                    <div class="timeline-content glow-effect">
+                        <h4>智能算法优化</h4>
+                        <p>采用高效的遗传算法，实现一键式的智能课程安排，将传统人工排课时间从数周缩短至秒钟级别。</p>
+                    </div>
+                    <div class="timeline-dot"></div>
+                </div>
+                <div class="timeline-item animate-on-scroll">
+                    <div class="timeline-content glow-effect">
+                        <h4>实时冲突检测</h4>
+                        <p>系统内置强大的约束检查引擎，能够实时检测并解决教师时间、教室容量、课程依赖等各类冲突，确保排课结果的可行性。</p>
+                    </div>
+                    <div class="timeline-dot"></div>
+                </div>
+                <div class="timeline-item animate-on-scroll">
+                    <div class="timeline-content glow-effect">
+                        <h4>可视化管理界面</h4>
+                        <p>直观的课表展示和操作，支持快速编辑和删除，让教务管理变得简单高效，提升用户体验。</p>
+                    </div>
+                    <div class="timeline-dot"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 需求分析部分 -->
+    <section id="requirements" class="doc-section">
+        <div class="container">
+            <div class="section-title">
+                <h2>需求分析文档</h2>
+            </div>
+            
+            <div class="doc-content animate-on-scroll">
+                <h3>项目背景</h3>
+                <p>当前许多院校的排课工作仍依赖人工或半自动化的Excel表格进行，效率低下、易出错，且难以应对复杂的排课约束和动态调整需求。本项目旨在开发一套现代化的排课信息系统。</p>
+                
+                <h3>项目目标</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4><i class="fas fa-rocket"></i> 提高排课效率</h4>
+                        <p>大幅缩短排课周期，减轻教务管理员的工作负担。通过自动化处理，将排课时间从数周缩短至数秒钟。</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <h4><i class="fas fa-shield-alt"></i> 减少课程冲突</h4>
+                        <p>通过智能算法和规则校验，最大限度地避免时间、地点、教师等资源冲突。</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <h4><i class="fas fa-chart-pie"></i> 优化资源利用</h4>
+                        <p>合理分配教室、实验室、自习室等教学资源，提高其使用率。</p>
+                    </div>
+                </div>
+                
+                <h3>功能需求</h3>
+                <h4>用户管理模块</h4>
+                <ul>
+                    <li>支持创建不同角色的用户账号(教师、学生)</li>
+                    <li>用户通过学号/工号和密码登录系统</li>
+                    <li>提供密码找回/重置功能</li>
+                    <li>为不同角色分配不同的操作权限</li>
+                </ul>
+                
+                <h4>基础数据管理</h4>
+                <ul>
+                    <li>教室信息管理：教室编号、容量、类型</li>
+                    <li>教师信息管理：工号、姓名、职称、禁排时间</li>
+                    <li>课程信息管理：课程编号、名称、学分、类型</li>
+                    <li>专业/班级信息管理：专业代码、专业名称、人数</li>
+                </ul>
+                
+                <h4>排课规则设置</h4>
+                <ul>
+                    <li>时间规则：课程必须安排在有效的时间段内。支持固定排课：部分课程可以预先指定上课时间</li>
+                    <li>教师规则：特定教师负责特定班级的特定课程；教师时间不能冲突</li>
+                    <li>教室规则：特定课程安排在特定类型教室；课程需要分配到可用教室；教室容量需满足班级人数；教室时间不能冲突</li>
+                    <li>课程规则：课程时间不能冲突</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- 系统设计部分 -->
+    <section id="design" class="doc-section">
+        <div class="container">
+            <div class="section-title">
+                <h2>系统设计文档</h2>
+            </div>
+            
+            <div class="doc-content animate-on-scroll">
+                <h3>系统架构</h3>
+                <p>采用前后端分离的现代化架构设计，确保系统的可扩展性和维护性。</p>
+                
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4><i class="fab fa-vuejs"></i> 前端架构</h4>
+                        <p>Vue.js + Element UI，提供响应式、现代化的用户界面</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <h4><i class="fas fa-server"></i> 后端架构</h4>
+                        <p>Java + Spring Boot + SQL，高性能的API服务</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <h4><i class="fas fa-brain"></i> 排课引擎</h4>
+                        <p>智能排课算法，多目标优化，支持复杂约束</p>
+                    </div>
+                </div>
+                
+                <h3>核心模块设计</h3>
+                <h4>排课算法流程</h4>
+                <ol>
+                    <li>触发: 用户在前端点击“排课”按钮，并选择特定学期</li>
+                    <li>请求接收: 后端 ClassTaskServiceImpl 接收到排课请求</li>
+                    <li>读取任务: 从 tb_class_task 表中根据学期等条件 SELECT 出所有需要安排的教学任务列表</li>
+                    <li>加载约束: 读取 tb_classroom, tb_location_info, tb_class_info 等表获取教室、班级人数等约束信息。</li>
+                    <li>核心算法执行:生成无冲突或冲突最少的课表</li>
+                </ol>
+                
+                <h4>数据库设计</h4>
+                <p>主要数据库表包括：用户表、课程表、教师表、教室表、班级表、课表表、权限表等。采用规范化设计，确保数据一致性和完整性。</p>
+                
+                <h4>接口设计</h4>
+                <ul>
+                    <li>用户认证接口：登录、注册、权限验证</li>
+                    <li>数据管理接口：CRUD操作接口</li>
+                    <li>排课接口：排课规则设置、排课执行、结果查询</li>
+                    <li>查询接口：课表查询、资源查询</li>
+                </ul>
+
+                <h3>系统演示</h3>
+                <div class="video-gallery">
+                    <div class="video-item">
+                        <h4>系统功能演示</h4>
+                        <div class="video-container">
+                            <!-- 本地视频文件 -->
+                            <video class="demo-video" controls preload="metadata" poster="./images/video-poster1.jpg">
+                                <source src="./videos/system-demo.mp4" type="video/mp4">
+                                <source src="./videos/system-demo.webm" type="video/webm">
+                                <!-- 如果视频无法加载，显示备用内容 -->
+                                <div class="video-fallback">
+                                    <i class="fas fa-play-circle"></i>
+                                    <span>系统功能演示视频</span>
+                                    <p>您的浏览器不支持视频播放</p>
+                                </div>
+                            </video>
+                            
+                            <!-- YouTube嵌入备用方案 -->
+                            <div class="youtube-embed" style="display: none;">
+                                <iframe width="100%" height="315" 
+                                        src="https://www.youtube.com/embed/YOUR_VIDEO_ID" 
+                                        title="系统功能演示" 
+                                        frameborder="0" 
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                        allowfullscreen>
+                                </iframe>
+                            </div>
+                        </div>
+                        <div class="video-description">
+                            <p>展示系统核心功能：用户登录、课程管理、智能排课等主要操作流程</p>
+                        </div>
+                    </div>
+
+                </div>
+                
+                <!-- 视频切换控制 -->
+                <div class="video-source-toggle">
+                    <button class="source-btn active" data-source="local">本地视频</button>
+                    <button class="source-btn" data-source="youtube">YouTube</button>
+                    <button class="source-btn" data-source="bilibili">Bilibili</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 设计图表部分 -->
+    <section id="diagrams" class="doc-section">
+        <div class="container">
+            <div class="section-title">
+                <h2>设计图表</h2>
+            </div>
+            
+            <div class="doc-content animate-on-scroll">
+                <h3>系统结构图</h3>
+                <div class="diagram-container">
+                    <img src="./images/structural-diagram.png" alt="系统结构图" class="diagram" 
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="diagram-placeholder" style="display: none;">
+                        <div>
+                            <i class="fas fa-users" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+                            <div>系统用例图展示</div>
+                            <small style="opacity: 0.8;">展示系统主要参与者和用例关系</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <h3>系统类图</h3>
+                <div class="diagram-container">
+                    <img src="./images/system-class.png" alt="系统类图" class="diagram"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="diagram-placeholder" style="display: none;">
+                        <div>
+                            <i class="fas fa-sitemap" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+                            <div>系统类图展示</div>
+                            <small style="opacity: 0.8;">展示系统核心类和类之间的关系</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <h3>系统时序图</h3>
+                <div class="diagram-container">
+                    <img src="./images/system-sequence.png" alt="系统时序图" class="diagram"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="diagram-placeholder" style="display: none;">
+                        <div>
+                            <i class="fas fa-project-diagram" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+                            <div>系统序列图展示</div>
+                            <small style="opacity: 0.8;">展示系统对象间的交互时序</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <h3>系统流程图</h3>
+                <div class="diagram-container">
+                    <img src="./images/flow-chart.png" alt="系统流程图" class="diagram"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="diagram-placeholder" style="display: none;">
+                        <div>
+                            <i class="fas fa-stream" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+                            <div>数据流图展示</div>
+                            <small style="opacity: 0.8;">展示系统数据流向和处理过程</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 项目团队部分 -->
+    <section id="team" class="doc-section">
+        <div class="container">
+            <div class="section-title">
+                <h2>项目团队</h2>
+            </div>
+            
+            <div class="team-grid">
+                <div class="team-member animate-on-scroll">
+                    <div class="member-img">
+                        <img src="./images/team/member1.jpg" alt="蔡雨坤" class="member-photo"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="member-icon" style="display: none;">
+                            <i class="fas fa-code"></i>
+                        </div>
+                    </div>
+                    <div class="member-info">
+                        <h4>蔡雨坤</h4>
+                        <p>前端开发 & 后端优化</p>
+                        <div class="member-contribution">
+                            <strong>贡献: 40%</strong>
+                            <p>网站搭建、前端功能实现、部分后端算法实现</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="team-member animate-on-scroll">
+                    <div class="member-img">
+                        <img src="./images/team/member2.jpg" alt="张凯" class="member-photo"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="member-icon" style="display: none;">
+                            <i class="fas fa-database"></i>
+                        </div>
+                    </div>
+                    <div class="member-info">
+                        <h4>张凯</h4>
+                        <p>后端开发 & 数据库搭建</p>
+                        <div class="member-contribution">
+                            <strong>贡献: 30%</strong>
+                            <p>核心算法实现、数据库设计</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="team-member animate-on-scroll">
+                    <div class="member-img">
+                        <img src="./images/team/member3.jpg" alt="关荣升" class="member-photo"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="member-icon" style="display: none;">
+                            <i class="fas fa-bug"></i>
+                        </div>
+                    </div>
+                    <div class="member-info">
+                        <h4>关荣升</h4>
+                        <p>测试工程师</p>
+                        <div class="member-contribution">
+                            <strong>贡献: 30%</strong>
+                            <p>系统各功能检验、需求分析、交互优化</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-column">
+                    <h3>关于项目</h3>
+                    <p>智能排课系统是为高校课程设计的现代化教务管理工具，旨在通过技术创新解决传统排课的痛点，提升教育资源利用效率。</p>
+                </div>
+                
+                <div class="footer-column">
+                    <h3>相关文档</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-file-pdf"></i> 需求分析文档</a></li>
+                        <li><a href="#"><i class="fas fa-file-pdf"></i> 系统设计文档</a></li>
+                        <li><a href="#"><i class="fas fa-book"></i> 用户手册</a></li>
+                        <li><a href="#"><i class="fas fa-file-code"></i> 技术规范</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-column">
+                    <h3>项目资源</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fab fa-github"></i> GitHub仓库</a></li>
+                        <li><a href="#"><i class="fas fa-code"></i> API文档</a></li>
+                        <li><a href="#"><i class="fas fa-rocket"></i> 部署指南</a></li>
+                        <li><a href="#"><i class="fas fa-question-circle"></i> 常见问题</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="copyright">
+                <p>&copy; 2025 智能排课系统项目组 | 信息系统课程设计</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 浮动操作按钮 -->
+    <div class="floating-actions">
+        <button class="floating-btn" id="back-to-top" title="回到顶部">
+            <i class="fas fa-arrow-up"></i>
+        </button>
+    </div>
+
+    <!-- 暗色模式切换 -->
+    <button id="dark-mode-toggle" class="btn">
+        <i class="fas fa-moon"></i>
+    </button>
+
+    <script>
+        // 滚动进度条
+        function updateScrollProgress() {
+            const scrollProgress = document.getElementById('scroll-progress');
+            const scrollTop = window.pageYOffset;
+            const documentHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const scrollPercent = (scrollTop / documentHeight) * 100;
+            scrollProgress.style.width = scrollPercent + '%';
+        }
+
+        // 统计数字滚动动画
+        function animateNumbers() {
+            const numbers = document.querySelectorAll('.stat-number[data-target]');
+            
+            numbers.forEach(number => {
+                const target = parseInt(number.getAttribute('data-target'));
+                const increment = target / 50; // 50帧动画
+                let current = 0;
+                
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (current >= target) {
+                        current = target;
+                        clearInterval(timer);
+                    }
+                    number.textContent = Math.ceil(current);
+                }, 40);
+            });
+        }
+
+        // 技术栈进度条动画
+        function animateProgressBars() {
+            const progressBars = document.querySelectorAll('.progress-bar[data-width]');
+            
+            progressBars.forEach(bar => {
+                const targetWidth = bar.getAttribute('data-width');
+                setTimeout(() => {
+                    bar.style.width = targetWidth;
+                }, 300);
+            });
+        }
+
+        // 粒子背景生成
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 50;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 6 + 's';
+                particle.style.animationDuration = (Math.random() * 3 + 3) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // 滚动动画
+        function animateOnScroll() {
+            const elements = document.querySelectorAll('.animate-on-scroll');
+            const windowHeight = window.innerHeight;
+            
+            elements.forEach(element => {
+                const elementTop = element.getBoundingClientRect().top;
+                
+                if (elementTop < windowHeight - 100) {
+                    element.classList.add('animate');
+                    
+                    // 如果是统计卡片，触发数字动画
+                    if (element.classList.contains('stats-card') && !element.classList.contains('animated')) {
+                        element.classList.add('animated');
+                        const statNumber = element.querySelector('.stat-number[data-target]');
+                        if (statNumber) {
+                            animateStatNumber(statNumber);
+                        }
+                    }
+                    
+                    // 如果是技术项目，触发进度条动画
+                    if (element.classList.contains('tech-item') && !element.classList.contains('animated')) {
+                        element.classList.add('animated');
+                        const progressBar = element.querySelector('.progress-bar[data-width]');
+                        if (progressBar) {
+                            setTimeout(() => {
+                                progressBar.style.width = progressBar.getAttribute('data-width');
+                            }, 300);
+                        }
+                    }
+                }
+            });
+        }
+
+        // 单个统计数字动画
+        function animateStatNumber(element) {
+            const target = parseInt(element.getAttribute('data-target'));
+            const increment = target / 50;
+            let current = 0;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    current = target;
+                    clearInterval(timer);
+                }
+                element.textContent = Math.ceil(current);
+            }, 40);
+        }
+
+        // 暗色模式切换
+        const darkModeToggle = document.getElementById('dark-mode-toggle');
+        const body = document.body;
+        
+        // 检查本地存储中是否保存了暗色模式设置
+        if (localStorage.getItem('darkMode') === 'enabled') {
+            body.classList.add('dark-theme');
+            darkModeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+        }
+        
+        darkModeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-theme');
+            
+            if (body.classList.contains('dark-theme')) {
+                localStorage.setItem('darkMode', 'enabled');
+                darkModeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+            } else {
+                localStorage.setItem('darkMode', 'disabled');
+                darkModeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+            }
+        });
+
+        // 回到顶部按钮
+        const backToTopBtn = document.getElementById('back-to-top');
+        
+        backToTopBtn.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+
+        // 显示/隐藏回到顶部按钮
+        function toggleBackToTopBtn() {
+            if (window.pageYOffset > 300) {
+                backToTopBtn.style.opacity = '1';
+                backToTopBtn.style.visibility = 'visible';
+            } else {
+                backToTopBtn.style.opacity = '0';
+                backToTopBtn.style.visibility = 'hidden';
+            }
+        }
+        
+        // 平滑滚动
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const targetId = this.getAttribute('href');
+                if (targetId === '#') return;
+                
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    const headerHeight = document.querySelector('header').offsetHeight;
+                    const targetTop = targetElement.offsetTop - headerHeight;
+                    
+                    window.scrollTo({
+                        top: targetTop,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+        
+        // 导航激活状态
+        function updateActiveNav() {
+            const sections = document.querySelectorAll('section[id]');
+            const navLinks = document.querySelectorAll('nav ul li a');
+            
+            let currentSection = 'home';
+            
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.offsetHeight;
+                const headerHeight = document.querySelector('header').offsetHeight;
+                
+                if (pageYOffset >= sectionTop - headerHeight - 100 && 
+                    pageYOffset < sectionTop + sectionHeight - headerHeight - 100) {
+                    currentSection = section.getAttribute('id');
+                }
+            });
+            
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === `#${currentSection}`) {
+                    link.classList.add('active');
+                }
+            });
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            createParticles();
+            animateOnScroll();
+            updateActiveNav();
+            updateScrollProgress();
+            toggleBackToTopBtn();
+            initVideoSourceToggle();
+            initVideoControls();
+            
+            // 初始化回到顶部按钮样式
+            backToTopBtn.style.opacity = '0';
+            backToTopBtn.style.visibility = 'hidden';
+            backToTopBtn.style.transition = 'all 0.3s ease';
+        });
+
+        // 滚动事件监听
+        window.addEventListener('scroll', function() {
+            animateOnScroll();
+            updateActiveNav();
+            updateScrollProgress();
+            toggleBackToTopBtn();
+        });
+
+        // 添加视差滚动效果（轻微）
+        window.addEventListener('scroll', function() {
+            const scrolled = window.pageYOffset;
+            const parallax = document.querySelector('.hero');
+            const speed = scrolled * 0.3; // 减少视差强度
+            
+            if (parallax) {
+                parallax.style.transform = `translateY(${speed}px)`;
+            }
+        });
+
+        // 视频源切换功能
+        function initVideoSourceToggle() {
+            const sourceButtons = document.querySelectorAll('.source-btn');
+            const videoContainers = document.querySelectorAll('.video-container');
+            
+            sourceButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const source = this.getAttribute('data-source');
+                    
+                    // 更新按钮状态
+                    sourceButtons.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // 切换视频源
+                    videoContainers.forEach(container => {
+                        const localVideo = container.querySelector('video');
+                        const youtubeEmbed = container.querySelector('.youtube-embed');
+                        const bilibiliEmbed = container.querySelector('.bilibili-embed');
+                        
+                        // 隐藏所有视频源
+                        if (localVideo) localVideo.style.display = 'none';
+                        if (youtubeEmbed) youtubeEmbed.style.display = 'none';
+                        if (bilibiliEmbed) bilibiliEmbed.style.display = 'none';
+                        
+                        // 显示选择的视频源
+                        switch(source) {
+                            case 'local':
+                                if (localVideo) localVideo.style.display = 'block';
+                                break;
+                            case 'youtube':
+                                if (youtubeEmbed) youtubeEmbed.style.display = 'block';
+                                break;
+                            case 'bilibili':
+                                if (bilibiliEmbed) bilibiliEmbed.style.display = 'block';
+                                break;
+                        }
+                    });
+                });
+            });
+        }
+
+        // 视频播放控制
+        function initVideoControls() {
+            const videos = document.querySelectorAll('.demo-video');
+            
+            videos.forEach(video => {
+                // 添加视频事件监听器
+                video.addEventListener('loadedmetadata', function() {
+                    console.log('视频已加载');
+                });
+                
+                video.addEventListener('error', function() {
+                    console.log('视频加载失败，显示备用内容');
+                    this.style.display = 'none';
+                    const fallback = this.parentElement.querySelector('.video-fallback');
+                    if (fallback) {
+                        fallback.style.display = 'flex';
+                    }
+                });
+                
+                // 视频悬浮效果
+                video.addEventListener('mouseenter', function() {
+                    this.style.transform = 'scale(1.02)';
+                });
+                
+                video.addEventListener('mouseleave', function() {
+                    this.style.transform = 'scale(1)';
+                });
+            });
+        }
+
+        // 添加卡片悬浮效果增强
+        document.querySelectorAll('.nav-card, .feature-card, .team-member, .stats-card, .tech-item, .demo-item').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-10px) scale(1.02)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+
+        // 图片点击放大功能
+        document.querySelectorAll('.diagram, .screenshot').forEach(img => {
+            img.addEventListener('click', function() {
+                // 创建放大显示的模态框
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.9);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10000;
+                    cursor: pointer;
+                `;
+                
+                const enlargedImg = document.createElement('img');
+                enlargedImg.src = this.src;
+                enlargedImg.alt = this.alt;
+                enlargedImg.style.cssText = `
+                    max-width: 90%;
+                    max-height: 90%;
+                    object-fit: contain;
+                    border-radius: 8px;
+                    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+                `;
+                
+                modal.appendChild(enlargedImg);
+                document.body.appendChild(modal);
+                
+                // 点击模态框关闭
+                modal.addEventListener('click', function() {
+                    document.body.removeChild(modal);
+                });
+                
+                // ESC键关闭
+                const escHandler = function(e) {
+                    if (e.key === 'Escape') {
+                        document.body.removeChild(modal);
+                        document.removeEventListener('keydown', escHandler);
+                    }
+                };
+                document.addEventListener('keydown', escHandler);
+            });
+            
+            // 添加点击提示样式
+            img.style.cursor = 'pointer';
+            img.title = '点击查看大图';
+        });
+
+        // 时间轴项目悬浮效果
+        document.querySelectorAll('.timeline-content').forEach(content => {
+            content.addEventListener('mouseenter', function() {
+                const dot = this.parentElement.querySelector('.timeline-dot');
+                if (dot) {
+                    dot.style.transform = 'translate(-50%, -50%) scale(1.3)';
+                    dot.style.background = 'var(--accent-secondary)';
+                }
+            });
+            
+            content.addEventListener('mouseleave', function() {
+                const dot = this.parentElement.querySelector('.timeline-dot');
+                if (dot) {
+                    dot.style.transform = 'translate(-50%, -50%) scale(1)';
+                    dot.style.background = 'var(--primary)';
+                }
+            });
+        });
+
+        // 添加键盘快捷键支持
+        document.addEventListener('keydown', function(e) {
+            // ESC键关闭暗色模式
+            if (e.key === 'Escape' && body.classList.contains('dark-theme')) {
+                darkModeToggle.click();
+            }
+            
+            // Home键回到顶部
+            if (e.key === 'Home') {
+                e.preventDefault();
+                backToTopBtn.click();
+            }
+        });
+    </script>
+</body>
+</html>
